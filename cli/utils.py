@@ -358,3 +358,39 @@ def ask_output_language() -> str:
         ).ask().strip()
 
     return choice
+
+
+def select_data_vendor() -> str:
+    """Select the data vendor for stock data, indicators, fundamentals, and news.
+
+    Returns one of: "yfinance", "akshare", "alpha_vantage"
+    """
+    choice = questionary.select(
+        "Select Data Source:",
+        choices=[
+            questionary.Choice(
+                "Yahoo Finance (default) — Global stocks, free, no API key",
+                "yfinance"
+            ),
+            questionary.Choice(
+                "akshare — A-Share / China market, free, no API key",
+                "akshare"
+            ),
+            questionary.Choice(
+                "Alpha Vantage — Global stocks, limited free tier, API key required",
+                "alpha_vantage"
+            ),
+        ],
+        instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
+        style=questionary.Style([
+            ("selected", "fg:magenta noinherit"),
+            ("highlighted", "fg:magenta noinherit"),
+            ("pointer", "fg:magenta noinherit"),
+        ]),
+    ).ask()
+
+    if choice is None:
+        console.print("\n[yellow]No data vendor selected, defaulting to yfinance.[/yellow]")
+        return "yfinance"
+
+    return choice

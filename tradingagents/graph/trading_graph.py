@@ -7,6 +7,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, List, Optional
 
+import pandas as pd
 import yfinance as yf
 
 logger = logging.getLogger(__name__)
@@ -199,32 +200,104 @@ class TradingAgentsGraph:
         """
         try:
             start = datetime.strptime(trade_date, "%Y-%m-%d")
-            end = start + timedelta(days=holding_days + 7)  # buffer for weekends/holidays
+            end = start + timedelta(days=holding_days + 7)
             end_str = end.strftime("%Y-%m-%d")
 
-            stock = yf.Ticker(ticker).history(start=trade_date, end=end_str)
-            spy = yf.Ticker("SPY").history(start=trade_date, end=end_str)
-
-            if len(stock) < 2 or len(spy) < 2:
-                return None, None, None
-
-            actual_days = min(holding_days, len(stock) - 1, len(spy) - 1)
-            raw = float(
-                (stock["Close"].iloc[actual_days] - stock["Close"].iloc[0])
-                / stock["Close"].iloc[0]
+            vendor = (
+                self.config.get("data_vendors", {}).get("core_stock_apis", "yfinance")
             )
-            spy_ret = float(
-                (spy["Close"].iloc[actual_days] - spy["Close"].iloc[0])
-                / spy["Close"].iloc[0]
-            )
-            alpha = raw - spy_ret
-            return raw, alpha, actual_days
+
+            if vendor == "akshare":
+                return self._fetch_returns_akshare(ticker, trade_date, holding_days, start, end_str)
+            else:
+                return self._fetch_returns_yfinance(ticker, trade_date, holding_days, start, end_str)
+
         except Exception as e:
             logger.warning(
                 "Could not resolve outcome for %s on %s (will retry next run): %s",
                 ticker, trade_date, e,
             )
             return None, None, None
+
+    def _fetch_returns_yfinance(
+        self, ticker: str, trade_date: str, holding_days: int,
+        start: datetime, end_str: str,
+    ) -> Tuple[Optional[float], Optional[float], Optional[int]]:
+        stock = yf.Ticker(ticker).history(start=trade_date, end=end_str)
+        spy = yf.Ticker("SPY").history(start=trade_date, end=end_str)
+
+        if len(stock) < 2 or len(spy) < 2:
+            return None, None, None
+
+        actual_days = min(holding_days, len(stock) - 1, len(spy) - 1)
+        raw = float(
+            (stock["Close"].iloc[actual_days] - stock["Close"].iloc[0])
+            / stock["Close"].iloc[0]
+        )
+        spy_ret = float(
+            (spy["Close"].iloc[actual_days] - spy["Close"].iloc[0])
+            / spy["Close"].iloc[0]
+        )
+        alpha = raw - spy_ret
+        return raw, alpha, actual_days
+
+    def _fetch_returns_akshare(
+        self, ticker: str, trade_date: str, holding_days: int,
+        start: datetime, end_str: str,
+    ) -> Tuple[Optional[float], Optional[float], Optional[int]]:
+        import akshare as ak
+
+        from tradingagents.dataflows.akshare_common import to_raw_code
+
+        try:
+            a_ticker = to_raw_code(ticker)
+            stock_df = ak.stock_zh_a_hist(
+                symbol=a_ticker,
+                period="daily",
+                start_date=start.strftime("%Y%m%d"),
+                end_date=end_str.replace("-", ""),
+                adjust="qfq",
+            )
+            # CSI 300 as benchmark
+            bench_df = ak.stock_zh_index_daily(symbol="sh000300")
+        except Exception:
+            return None, None, None
+
+        if stock_df is None or stock_df.empty:
+            return None, None, None
+
+        stock_df["日期"] = pd.to_datetime(stock_df["日期"], errors="coerce")
+        stock_df = stock_df.sort_values("日期")
+
+        # Filter benchmark to relevant dates
+        if bench_df is not None and not bench_df.empty:
+            bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce")
+            bench_df = bench_df.sort_values("date")
+            bench_filtered = bench_df[
+                (bench_df["date"] >= start) & (bench_df["date"] <= pd.to_datetime(end_str))
+            ]
+        else:
+            bench_filtered = None
+
+        if len(stock_df) < 2:
+            return None, None, None
+
+        actual_days = min(holding_days, len(stock_df) - 1)
+        close_col = "收盘"
+        first_close = float(stock_df[close_col].iloc[0])
+        last_close = float(stock_df[close_col].iloc[actual_days])
+        raw = (last_close - first_close) / first_close
+
+        if bench_filtered is not None and len(bench_filtered) >= 2:
+            bench_actual = min(actual_days, len(bench_filtered) - 1)
+            bench_first = float(bench_filtered["close"].iloc[0])
+            bench_last = float(bench_filtered["close"].iloc[bench_actual])
+            bench_ret = (bench_last - bench_first) / bench_first
+        else:
+            bench_ret = 0.0
+
+        alpha = raw - bench_ret
+        return raw, alpha, actual_days
 
     def _resolve_pending_entries(self, ticker: str) -> None:
         """Resolve pending log entries for ticker at the start of a new run.

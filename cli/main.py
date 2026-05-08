@@ -596,6 +596,15 @@ def get_user_selections():
         )
         anthropic_effort = ask_anthropic_effort()
 
+    # Step 9: Data vendor
+    console.print(
+        create_question_box(
+            "Step 9: Data Source",
+            "Select the data vendor for stock prices, indicators, fundamentals, and news"
+        )
+    )
+    selected_data_vendor = select_data_vendor()
+
     return {
         "ticker": selected_ticker,
         "analysis_date": analysis_date,
@@ -609,6 +618,7 @@ def get_user_selections():
         "openai_reasoning_effort": reasoning_effort,
         "anthropic_effort": anthropic_effort,
         "output_language": output_language,
+        "data_vendor": selected_data_vendor,
     }
 
 
@@ -944,6 +954,15 @@ def run_analysis(checkpoint: bool = False):
     config["anthropic_effort"] = selections.get("anthropic_effort")
     config["output_language"] = selections.get("output_language", "English")
     config["checkpoint_enabled"] = checkpoint
+
+    # Data vendor: apply the user's choice to all four categories
+    vendor = selections.get("data_vendor", "yfinance")
+    config["data_vendors"] = {
+        "core_stock_apis": vendor,
+        "technical_indicators": vendor,
+        "fundamental_data": vendor,
+        "news_data": vendor,
+    }
 
     # Create stats callback handler for tracking LLM/tool calls
     stats_handler = StatsCallbackHandler()
