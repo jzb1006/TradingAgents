@@ -21,6 +21,7 @@ dependencies = [
     "pandas>=2.3.0",
     "parsel>=1.10.0",
     "pytz>=2025.2",
+    "python-dotenv>=1.0.0",
     "questionary>=2.1.0",
     "redis>=6.2.0",
     "requests>=2.32.4",
@@ -35,12 +36,14 @@ dependencies = [
 
 [project.scripts]
 tradingagents = "cli.main:app"
+tradingagents-web = "tradingagents.webapp.server:main"
 
 [tool.setuptools.packages.find]
 include = ["tradingagents*", "cli*"]
 
 [tool.setuptools.package-data]
 cli = ["static/*"]
+tradingagents.webapp = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

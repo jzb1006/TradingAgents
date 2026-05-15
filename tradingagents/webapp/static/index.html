@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TradingAgents Web</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div class="title-block">
+            <p class="eyebrow">TradingAgents</p>
+            <h1>Stock Analysis Console</h1>
+            <p class="subtitle">Agent workflow dashboard</p>
+          </div>
+          <div id="statusBadge" class="status idle" role="status" aria-live="polite">Idle</div>
+        </header>
+
+        <div class="grid">
+          <form id="analysisForm" class="panel controls" autocomplete="off" aria-labelledby="setupTitle">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Setup</p>
+                <h2 id="setupTitle">Analysis Setup</h2>
+              </div>
+              <span class="panel-tag">Live run</span>
+            </div>
+
+            <section class="form-section" aria-labelledby="marketSection">
+              <h3 id="marketSection">Market</h3>
+              <div class="field-row">
+                <label>
+                <span>Ticker</span>
+                  <input id="ticker" name="ticker" value="SPY" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" />
+                </label>
+                <label>
+                <span>Date</span>
+                  <input id="date" name="date" type="date" />
+                </label>
+              </div>
+            </section>
+
+            <section class="form-section" aria-labelledby="modelSection">
+              <h3 id="modelSection">Models</h3>
+              <div class="field-row">
+                <label>
+                <span>LLM Provider</span>
+                <select id="provider" name="provider"></select>
+                  <small id="providerStatus" class="field-note" aria-live="polite"></small>
+                </label>
+                <label>
+                <span>Data Source</span>
+                <select id="data_vendor" name="data_vendor"></select>
+                </label>
+              </div>
+
+              <div class="field-row">
+                <label>
+                <span>Quick Model</span>
+                <input id="quick_model" name="quick_model" list="quickModels" />
+                <datalist id="quickModels"></datalist>
+                </label>
+                <label>
+                <span>Deep Model</span>
+                <input id="deep_model" name="deep_model" list="deepModels" />
+                <datalist id="deepModels"></datalist>
+                </label>
+              </div>
+            </section>
+
+            <section class="form-section" aria-labelledby="workflowSection">
+              <h3 id="workflowSection">Workflow</h3>
+              <div class="field-row">
+                <label>
+                <span>Language</span>
+                <select id="language" name="language"></select>
+                </label>
+                <label>
+                <span>Rounds</span>
+                <input id="research_depth" name="research_depth" type="number" min="1" max="5" value="1" />
+                </label>
+              </div>
+
+              <fieldset>
+                <legend>Analysts</legend>
+                <div id="analysts" class="checks"></div>
+              </fieldset>
+
+              <div class="toggles">
+                <label class="inline">
+                <input id="checkpoint" name="checkpoint" type="checkbox" />
+                <span>Checkpoint resume</span>
+                </label>
+              </div>
+            </section>
+
+            <button id="submitButton" type="submit">Run Analysis</button>
+          </form>
+
+          <section class="panel result">
+            <div class="result-head">
+              <div>
+                <p class="eyebrow">Result</p>
+                <h2 id="resultTitle">No analysis yet</h2>
+              </div>
+              <div id="signalPill" class="signal" aria-label="Trading signal">-</div>
+            </div>
+            <div id="meta" class="meta"></div>
+            <section class="live-section" aria-live="polite">
+              <div class="live-head">
+                <div>
+                  <p class="eyebrow">Live Process</p>
+                  <h3>Agent outputs and tool calls</h3>
+                </div>
+                <span class="stream-label">Graph stream</span>
+              </div>
+              <div id="agentStatus" class="agent-status"></div>
+              <div id="liveEvents" class="event-list">
+                <div class="event-empty">No live analysis running.</div>
+              </div>
+            </section>
+            <article id="decision" class="decision">
+              <div class="empty-state">Awaiting analysis</div>
+            </article>
+          </section>
+
+          <section class="panel history">
+            <div class="history-head">
+              <div>
+                <p class="eyebrow">History</p>
+                <h2>Analysis Records</h2>
+              </div>
+              <button id="refreshHistory" type="button" class="secondary">Refresh</button>
+            </div>
+            <div id="historyList" class="history-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

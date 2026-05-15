@@ -171,6 +171,20 @@ python -m cli.main     # alternative: run directly from source
 ```
 You will see a screen where you can select your desired tickers, analysis date, LLM provider, research depth, and more.
 
+### Web UI
+
+Run the local browser UI:
+```bash
+python -m tradingagents.webapp
+```
+
+After installing the package, you can also use:
+```bash
+tradingagents-web
+```
+
+Open `http://127.0.0.1:8000` and submit an analysis from the form. The Web UI runs the same LangGraph workflow and streams visible Agent outputs, tool calls, debate updates, and report drafts while the job is running. Completed decisions and optional checkpoint resume use the same persistence paths under `~/.tradingagents/`.
+
 <p align="center">
   <img src="assets/cli/cli_init.png" width="100%" style="display: inline-block; margin: 0 2%;">
 </p>
